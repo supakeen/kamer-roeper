@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 
-#include "WiFI.h"
+#include <ESP8266WiFI.h>
 #include <MQTT.h>
 #include <LineProtocol.h>
 
@@ -60,9 +60,9 @@ void loop() {
 
   avg = sum / MEASUREMENT_COUNT;
 
-  snprintf(str, sizeof(str), "temperature,room=livingroom value=%f", avg);
+  snprintf(str, sizeof(str), "temperature,room=study value=%f", avg);
 
-  mqtt.publish("/esp8266/temperature", str);
+  mqtt.publish("/sensor/temperature", str);
 
   Serial.println(avg);
 }
@@ -76,7 +76,7 @@ void reconnect() {
  Serial.println("Connecting to MQTT Broker...");
  while (!mqtt.connected()) {
      Serial.println("Reconnecting to MQTT Broker..");
-     String clientId = "esp8266-livingroom-a";
+     String clientId = "esp8266-study-a";
      clientId += String(random(0xffff), HEX);
     
      if (mqtt.connect(clientId.c_str())) {
