@@ -1,5 +1,9 @@
-#include <ESP8266WiFi.h>
-#include <PubSubClient.h>
+#include <Arduino.h>
+#include <SPI.h>
+
+#include "WiFI.h"
+#include <MQTT.h>
+#include <LineProtocol.h>
 
 #define VCC 3300
 
@@ -11,7 +15,7 @@ void reconnect();
 
 IPAddress mqttServer(192, 168, 1, 10);
 WiFiClient wifiClient = WiFiClient();
-PubSubClient mqttClient(mqttServer, 1883, callback, wifiClient);
+MQTTClient mqtt;
 
 const int PIN_TMP36 = A0;
 
@@ -31,13 +35,15 @@ void setup() {
 
   Serial.print("Connected, IP = ");
   Serial.println(WiFi.localIP());
+
+  mqtt.begin("192.168.1.10", 1883, wifiClient);
 }
 
 void loop() {
-  if (!mqttClient.connected()) {
+  if (!mqtt.connected()) {
     reconnect();
   }
-  mqttClient.loop();
+  mqtt.loop();
   
   float sum = 0;
   float avg = 0;
@@ -56,7 +62,7 @@ void loop() {
 
   snprintf(str, sizeof(str), "temperature,room=livingroom value=%f", avg);
 
-  mqttClient.publish("/esp8266/temperature", str);
+  mqtt.publish("/esp8266/temperature", str);
 
   Serial.println(avg);
 }
@@ -68,12 +74,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 void reconnect() {
  Serial.println("Connecting to MQTT Broker...");
- while (!mqttClient.connected()) {
+ while (!mqtt.connected()) {
      Serial.println("Reconnecting to MQTT Broker..");
      String clientId = "esp8266-livingroom-a";
      clientId += String(random(0xffff), HEX);
     
-     if (mqttClient.connect(clientId.c_str())) {
+     if (mqtt.connect(clientId.c_str())) {
        Serial.println("Connected.");
        // subscribe to topic      
      }
