@@ -18,18 +18,21 @@ MQTTClient mqtt;
 
 const int PIN_TMP36 = A0;
 
-float temperatures[MEASUREMENT_COUNT] = { 0 };
+float temperatures[MEASUREMENT_COUNT] = {0};
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
   Serial.println();
 
   WiFi.begin("X", "X");
 
-  while(WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     delay(500);
     Serial.print(".");
   }
+
   Serial.println();
 
   Serial.print("Connected, IP = ");
@@ -38,20 +41,24 @@ void setup() {
   mqtt.begin("192.168.1.10", 1883, wifiClient);
 }
 
-void loop() {
-  if (!mqtt.connected()) mqtt.connect("");
+void loop()
+{
+  if (!mqtt.connected())
+    mqtt.connect("");
   mqtt.loop();
-  
+
   float sum = 0;
   float avg = 0;
-  char str[128] = { 0 };
-  
-  for(int i = 0; i < MEASUREMENT_COUNT; i++) {
+  char str[128] = {0};
+
+  for (int i = 0; i < MEASUREMENT_COUNT; i++)
+  {
     temperatures[i] = (map(analogRead(PIN_TMP36), 0, 1023, 0, VCC) - 500) / 10;
     delay(MEASUREMENT_WINDOW / MEASUREMENT_COUNT);
   };
 
-  for(int i = 0; i < MEASUREMENT_COUNT; i++) {
+  for (int i = 0; i < MEASUREMENT_COUNT; i++)
+  {
     sum += temperatures[i];
   }
 
