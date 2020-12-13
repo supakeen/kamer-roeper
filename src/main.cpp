@@ -10,7 +10,6 @@
 #define MEASUREMENT_WINDOW 5000
 #define MEASUREMENT_COUNT 50
 
-void callback(char*, byte*, unsigned int);
 void reconnect();
 
 IPAddress mqttServer(192, 168, 1, 10);
@@ -40,9 +39,7 @@ void setup() {
 }
 
 void loop() {
-  if (!mqtt.connected()) {
-    reconnect();
-  }
+  if (!mqtt.connected()) mqtt.connect("");
   mqtt.loop();
   
   float sum = 0;
@@ -65,23 +62,4 @@ void loop() {
   mqtt.publish("/sensor/temperature", str);
 
   Serial.println(avg);
-}
-
-void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.println("Callback");
-  Serial.println((char) payload[0]);
-}
-
-void reconnect() {
- Serial.println("Connecting to MQTT Broker...");
- while (!mqtt.connected()) {
-     Serial.println("Reconnecting to MQTT Broker..");
-     String clientId = "esp8266-study-a";
-     clientId += String(random(0xffff), HEX);
-    
-     if (mqtt.connect(clientId.c_str())) {
-       Serial.println("Connected.");
-       // subscribe to topic      
-     }
- }
 }
