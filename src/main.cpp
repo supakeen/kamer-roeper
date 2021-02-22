@@ -1,8 +1,9 @@
 #include <Arduino.h>
-#include <SPI.h>
 
 #include <ESP8266WiFI.h>
 #include <MQTT.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 #include <LineProtocol.h>
 
 #define VCC 3300
@@ -15,10 +16,10 @@ void reconnect();
 IPAddress mqttServer(192, 168, 1, 10);
 WiFiClient wifiClient = WiFiClient();
 MQTTClient mqtt;
+OneWire oneWire(0);  // GPIO0 -> D3 has internal pullup
+DallasTemperature sensors(&oneWire);
 
-const int PIN_TMP36 = A0;
-
-float temperatures[MEASUREMENT_COUNT] = {0};
+#define every(t) for (static uint32_t _lasttime; (uint32_t)((uint32_t) millis() - _lasttime) >= (t); _lasttime = millis())
 
 void setup()
 {
@@ -39,6 +40,24 @@ void setup()
   Serial.println(WiFi.localIP());
 
   mqtt.begin("192.168.1.10", 1883, wifiClient);
+
+  sensors.begin();
+  sensors.setWaitForConversion(false);
+}
+
+void loop_temperature() {
+  sensors.requestTemperatures();
+
+  unsigned int timeout = millis() + 500;
+
+  while(millis() < timeout && !sensors.isConversionComplete()) { };
+
+  float temperatureC = sensors.getTempCByIndex(0);
+
+  char str[256];
+  snprintf(str, sizeof(str), "temperature,room=study value=%f", temperatureC);
+  mqtt.publish("/sensor/temperature", str);
+  Serial.println(str);
 }
 
 void loop()
@@ -47,26 +66,5 @@ void loop()
     mqtt.connect("");
   mqtt.loop();
 
-  float sum = 0;
-  float avg = 0;
-  char str[128] = {0};
-
-  for (int i = 0; i < MEASUREMENT_COUNT; i++)
-  {
-    temperatures[i] = (map(analogRead(PIN_TMP36), 0, 1023, 0, VCC) - 500) / 10;
-    delay(MEASUREMENT_WINDOW / MEASUREMENT_COUNT);
-  };
-
-  for (int i = 0; i < MEASUREMENT_COUNT; i++)
-  {
-    sum += temperatures[i];
-  }
-
-  avg = sum / MEASUREMENT_COUNT;
-
-  snprintf(str, sizeof(str), "temperature,room=study value=%f", avg);
-
-  mqtt.publish("/sensor/temperature", str);
-
-  Serial.println(avg);
+  every(15000) loop_temperature();
 }
